@@ -49,9 +49,9 @@ class Bloglist():           #定义类，脚本的核心
             #print line
 	#print "-----------------------------"
 	print "发布文章：" + str(self.zhuan+self.yuan) + "篇 ",
-        print "转载："+ str(self.zhuan) + "篇 " + "原创：" + str(self.yuan) + "篇"
-        Bloglist.total_zhuan = Bloglist.total_zhuan + self.zhuan
-        Bloglist.total_yuan = Bloglist.total_yuan + self.yuan
+	print "转载："+ str(self.zhuan) + "篇 " + "原创：" + str(self.yuan) + "篇"
+	Bloglist.total_zhuan = Bloglist.total_zhuan + self.zhuan
+	Bloglist.total_yuan = Bloglist.total_yuan + self.yuan
 	Bloglist.total = Bloglist.total_zhuan + Bloglist.total_yuan
 def author():
     date = str(year) + str(month)
