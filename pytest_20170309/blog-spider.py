@@ -21,6 +21,9 @@ except Exception as e:
 year = 2017                 #默认年份为2017，可以此处修改
 
 class Bloglist():           #定义类，脚本的核心
+    total_zhuan=0
+    total_yuan=0
+    total = 0
     urlHead = 'http://192.168.32.3/blog/?author=%s&&m=%s'
     def __init__(self, author, date='201703'):        #初始化参数
         self.url = self.urlHead %(author,date)
@@ -47,6 +50,9 @@ class Bloglist():           #定义类，脚本的核心
 	#print "-----------------------------"
 	print "发布文章：" + str(self.zhuan+self.yuan) + "篇 ",
         print "转载："+ str(self.zhuan) + "篇 " + "原创：" + str(self.yuan) + "篇"
+        Bloglist.total_zhuan = Bloglist.total_zhuan + self.zhuan
+        Bloglist.total_yuan = Bloglist.total_yuan + self.yuan
+	Bloglist.total = Bloglist.total_zhuan + Bloglist.total_yuan
 def author():
     date = str(year) + str(month)
     user = {2:'李  鹏', 3:'王  珏', 5:'黄  俊',6:'韩晶晶', 7:'李小双', 8:'赵盼盼', \
@@ -60,6 +66,7 @@ def author():
         userPaper = Bloglist(i, date)     #成员对象的实例化
         print '%s' %user[i],
         userPaper.count()
+    print "总计：%s篇，转载：%s篇，原创：%s篇" %(Bloglist.total, Bloglist.total_zhuan, Bloglist.total_yuan)
     print "-------------------------------------------"
     
 if __name__ == '__main__':
