@@ -43,7 +43,7 @@ class Bloglist():           #定义类，脚本的核心
 	#print "-----------------------------"
         for line in self.getTitle():
            # if '转载' or '（转）' in line:
-            if line[0:6]==('转载') or line[0:9]== '（转）':
+            if line[0:6]=='转载' or line[0:9]== '（转）' or line[3:9]=='转载':
                 self.zhuan += 1
             else:
                 self.yuan += 1
