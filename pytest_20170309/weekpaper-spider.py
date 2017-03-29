@@ -8,7 +8,7 @@
 #version:1.0
 ######################
 
-import urllib,urllib2
+import urllib2
 import re                  #载入所需模块
 
 

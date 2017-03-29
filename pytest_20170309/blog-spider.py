@@ -2,7 +2,7 @@
 #coding:utf-8
 
 ##################
-#爬取测试技术分享里每位同事一个月的文章
+#爬取测试技术分享里指定某一月所有同事的文章发布数量
 #powered by: kai.liang@i-soft.com.cn
 #date: 20170307
 #version: 1.0
