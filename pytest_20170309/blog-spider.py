@@ -33,7 +33,7 @@ class Bloglist():           #定义类，脚本的核心
         html = urllib2.urlopen(self.url).read()
         return html
     def getTitle(self):                            #获取网页中某一作者的文章标题
-        reg = r'"bookmark">(.*)</a></h2>'
+        reg = r'"bookmark">(.*)</a>'
         titlere = re.compile(reg)
         title = re.findall(titlere, self.getHtml())
         return title
@@ -42,12 +42,13 @@ class Bloglist():           #定义类，脚本的核心
 	#print "文章标题："
 	#print "-----------------------------"
         for line in self.getTitle():
+	    if not line.startswith("<time") and not line.startswith("<img"): 
            # if '转载' or '（转）' in line:
-            if '转载' in line or line[0:9]== '（转）':
-                self.zhuan += 1
-            else:
-                self.yuan += 1
-            #print line
+                if '转载' in line or line[0:9]== '（转）':
+                    self.zhuan += 1
+                else:
+                    self.yuan += 1
+                #print line
 	#print "-----------------------------"
 	print "发布文章：" + str(self.zhuan+self.yuan) + "篇 ",
 	print "转载："+ str(self.zhuan) + "篇 " + "原创：" + str(self.yuan) + "篇"
