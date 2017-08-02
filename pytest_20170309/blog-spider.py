@@ -33,7 +33,7 @@ class Bloglist():           #定义类，脚本的核心
         html = urllib2.urlopen(self.url).read()
         return html
     def getTitle(self):                            #获取网页中某一作者的文章标题
-        reg = r'"bookmark">(.*)</a>'
+        reg = r'"bookmark">(.*)</a></h2>'
         titlere = re.compile(reg)
         title = re.findall(titlere, self.getHtml())
         return title
@@ -57,7 +57,7 @@ class Bloglist():           #定义类，脚本的核心
 	Bloglist.total = Bloglist.total_zhuan + Bloglist.total_yuan
 def author():
     date = str(year) + str(month)
-    user = {2:'李  鹏', 3:'王  珏', 5:'黄  俊',6:'韩晶晶', 7:'李小双', 8:'赵盼盼', \
+    user = { 5:'黄  俊', 7:'李小双', 8:'赵盼盼', \
 10:'刘  珂',11:'刘  辉', 12:'刘春媛', 13:'路  斐', 14:'梁  凯', 15:'李兴峰', 16:'刘  璐',\
  17:'姚翔川',18:'刘  畅', 19:'刘  杨', 20:'赵丽丽', 21:'迟建平'}
     #测试成员对应的id
