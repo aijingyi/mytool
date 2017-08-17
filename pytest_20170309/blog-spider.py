@@ -39,17 +39,12 @@ class Bloglist():           #定义类，脚本的核心
         return title
     def count(self):                  #计算作者的文章数量，本打算输出文章标题
                                       #看着乱，就给注释掉了
-	#print "文章标题："
-	#print "-----------------------------"
         for line in self.getTitle():
 	    if not line.startswith("<time") and not line.startswith("<img"): 
-           # if '转载' or '（转）' in line:
                 if '转载' in line or line[0:9]== '（转）':
                     self.zhuan += 1
                 else:
                     self.yuan += 1
-                #print line
-	#print "-----------------------------"
 	print "发布文章：" + str(self.zhuan+self.yuan) + "篇 ",
 	print "转载："+ str(self.zhuan) + "篇 " + "原创：" + str(self.yuan) + "篇"
 	Bloglist.total_zhuan = Bloglist.total_zhuan + self.zhuan
