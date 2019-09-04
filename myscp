@@ -1,0 +1,28 @@
+#/bin/bash
+
+run_cmd()
+{
+    echo "$(whoami)@$(hostname):$(pwd)# $1"
+    eval $1
+    val=$?
+    return $val
+}
+
+
+#run_cmd "sed -i '/128.224.$2*/d' /folk/kliang/.ssh/known_hosts"
+home_path=~
+ssh-keygen -f "${home_path}/.ssh/known_hosts" -R 128.224.$2 
+#run_cmd "sed -i '/128.224.$2/d' /folk/kliang/.ssh/known_hosts"
+if [ $1 == upload_env ]; then
+    #run_cmd "scp -r $1 root@128.224.$2:/opt/wr-test/env"
+    run_cmd "sshpass -p root scp -o StrictHostKeyChecking=no -r $1 root@128.224.$2:/opt/wr-test/env/"
+elif [ -f $1 ]; then
+    #scp -r $1 root@128.224.$2:/root/
+    run_cmd "sshpass -p root scp -o StrictHostKeyChecking=no -r $1 root@128.224.$2:/root/"
+else
+    run_cmd "sshpass -p root  scp -o StrictHostKeyChecking=no -r $1 root@128.224.$2:/opt/wr-test/testcases/bts/"
+    #run_cmd "scp -r $1 root@128.224.$2:/opt/wr-test/testcases/bts/"
+fi
+    
+
+[  $? == 0 ] && echo copy $1 successfully! Please check it on server.
