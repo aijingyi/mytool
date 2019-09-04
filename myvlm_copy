@@ -1,0 +1,230 @@
+#!/bin/bash
+#copy images to board server with VLMTool copyFile
+
+
+
+
+myhelp()
+{
+	echo "usage:myvlm-copy -t barcode: copy dtb,kernel and rootfs to board server"
+	echo "-t barcode of target -d: debug mode will print directory info not send file to server"
+        echo "-c copy iso file to iso directory."
+	echo "-h: help"
+                
+
+}
+
+
+
+file_path()
+{
+    #barcode=24961
+    #Image_server=20
+    current_dir=$(pwd)
+    iso_dir=`basename $(pwd)`
+    #build_dir=/buildarea1/wrlinux-10.17/build_dir/kernel/auto_pti-on_spectre_v2-on/180402/lxbuilds/Harcuvar_platform_up/intel-x86-64-preempt-rt-glibc-std/lib32/wrlinux
+    echo $current_dir | grep '^/net' 
+    if [ $? == 0 ]; then
+        head_dir=${current_dir}
+    else
+        head_dir=/net/$(hostname)${current_dir}
+    fi
+
+    if [ -d bitbake_build ]; then
+        build_dir_full=${head_dir}/bitbake_build/tmp/deploy/images/intel-x86-64/
+        #build_dir_full=$(pwd)/bitbake_build/tmp/deploy/images/intel-x86-64/
+    elif [ -d bitbake_test ]; then
+        build_dir_full=${head_dir}/bitbake_build/tmp/deploy/images/intel-x86-64/
+        #build_dir_full=$(pwd)/bitbake_build/tmp/deploy/images/intel-x86-64/
+        #build_dir_full=$(pwd)/tmp-glibc/deploy/images/*/
+    else
+        if [ $iso_dir == build ]; then
+            build_dir_full=${head_dir}/tmp-glibc/deploy/images/*/
+            #build_dir_full=$(pwd)/tmp-glibc/deploy/images/*/
+        else
+            build_dir_full=${head_dir}/build*/tmp-glibc/deploy/images/*/
+            #build_dir_full=$(pwd)/build/tmp-glibc/deploy/images/*/
+        fi
+    fi
+    #echo $build_dir_full
+    ls |grep dtb  
+    #[ $? == 0 ] && build_dir_full=/net/${Image_server_full}$(pwd)/
+    [ $? == 0 ] && build_dir_full=$(pwd)/
+    cd $build_dir_full
+    
+    get_mach=`basename $(pwd)`
+    if [ -e u-boot.img ]; then
+        {
+ 	image=uImage--*.bin   
+        }
+    fi
+    #build_dir_full=/net/${Image_server_full}$(pwd)/build/tmp-glibc/deploy/images/${get_mach}/
+    #echo $build_dir_full
+
+    case $get_mach in
+        qemux86-64|intel-x86-64|intel-skylake-avx512-64|intel-skylake-64)
+            #image=bzImage--*.bin
+            image=bzImage
+            dtb=;; 
+        axxiaarm64)
+            image=uImage--*.bin
+            dtb=uImage--*victoria*.dtb;;
+        axxiaarm)
+            image=uImage--*.bin
+            dtb=uImage--*amarillo*.dtb;;
+        intel-socfpga-64b)
+            image=Image
+            dtb=Image-socfpga_stratix10_socdk.dtb;;
+        ti-am335x)
+            image=zImage-ti-am335x.bin
+            dtb=zImage-am335x-evm.dtb;;
+        nxp-ls1046)
+            image=Image
+            dtb=fsl-ls1046a-rdb-sdk.dtb;;
+        nxp-imx7)
+            image=zImage
+            dtb=imx7d-sdb.dtb;;
+        nxp-imx6)
+            image=zImage
+            dtb=imx6q-sabresd.dtb
+            echo $barcode
+            [ ${barcode} == 922009 ] && dtb=imx6sx-sdb.dtb
+            [ $barcode == 21977 ] && dtb=imx6q-sabresd.dtb;;
+        nxp-ls10xx)
+            image=*[0-9].bin
+            dtb=*iot*[0-9].dtb 
+            /folk/vlm/commandline/vlmTool getAttr -t $barcode allinone |grep iot >/dev/null
+            if [ $? = 0 ]; then
+            dtb=*iot*[0-9].dtb 
+            else 
+                dtb=*twr*[0-9].dtb 
+            fi ;;
+        *)
+            echo "Error machine!!"
+            exit 1;;    
+
+
+    esac
+
+    #rootfs=*[0-9].rootfs.tar.bz2
+    rootfs=`ls *${get_mach}-[0-9]*.tar.bz2 | tail -n1`
+    [ $get_mach == qemux86-64 ] && rootfs=*qemux86-64.ext4
+    #rootfs=*rootfs.tar.bz2
+    dtb_full=${build_dir_full}${dtb}
+    #echo $image
+    #echo $build_dir_full
+    image_full=${build_dir_full}${image}
+    rootfs_full=${build_dir_full}${rootfs}
+}
+
+debug_info()
+{
+    #echo ${image_full}
+    #echo ${rootfs_full}
+    [ ${dtb}x != x ] && echo ${dtb_full}
+    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -k ${image_full}  
+    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -r ${rootfs_full}  
+    echo /folk/vlm/commandline/vlmTool reboot -t $barcode 
+    [ ${dtb}x != x ] && echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -d ${dtb_full} 
+}
+copy_image()
+{
+    #echo $current_dir
+    #echo $iso_dir
+    iso_link=${current_dir}/../iso/${iso_dir}/build/tmp-glibc/deploy/images/${get_mach}
+    mkdir -p $iso_link
+    #echo $iso_link
+    echo "Backup images to test directory."
+    cp -a ${image_full} $iso_link/
+    cp -a ${rootfs_full} $iso_link/
+    [ ${dtb}x != x ] && cp -a ${dtb_full} $iso_link/
+    echo "copy files successfully!!!"
+}
+
+copyFile()
+{
+    echo "Copy kernel and rootfs to board $barcode please wait..."
+    if [ ${dtb}x == x ]; then
+    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -k ${image_full}  
+    /folk/vlm/commandline/vlmTool copyFile -t $barcode -r ${rootfs_full}  > /dev/null
+    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -r ${rootfs_full}  
+    /folk/vlm/commandline/vlmTool copyFile -t $barcode -k ${image_full}  > /dev/null
+    else
+    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -k ${image_full}  
+    /folk/vlm/commandline/vlmTool copyFile -t $barcode -k ${image_full}  > /dev/null
+    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -r ${rootfs_full}  
+    /folk/vlm/commandline/vlmTool copyFile -t $barcode -r ${rootfs_full}  > /dev/null
+    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -d ${dtb_full} 
+    /folk/vlm/commandline/vlmTool copyFile -t $barcode -d ${dtb_full}  > /dev/null
+    fi
+    #echo $?
+    [ $? == 0 ] || exit 1
+    echo 'Copy kernel and rootfs to board successfully!'
+    /folk/vlm/commandline/vlmTool reboot -t $barcode >/dev/null
+    echo "Reboot board $barcode successfully!"
+}
+
+nfs_copy()
+{
+    echo "Copy kernel and rootfs to board $barcode please wait..."
+    if [ ${dtb}x == x ]; then
+    scp ${image_full} root@pek-kliang-d1:/mnt/$barcode/kernel
+    scp ${rootfs_full} root@pek-kliang-d1:/mnt/$barcode/rootfs
+    else
+    scp ${image_full} root@pek-kliang-d1:/mnt/$barcode/kernel
+    scp ${dtb_full} root@pek-kliang-d1:/mnt/$barcode/dtb
+    ssh root@pek-kliang-d1 mv /mnt/$barcode/rootfs /mnt/$barcode/rootfs-tmpd
+    ssh root@pek-kliang-d1 rm -rf /mnt/$barcode/rootfs-tmpd &
+    ssh root@pek-kliang-d1 mkdir -p /mnt/$barcode/rootfs
+    scp ${rootfs_full} root@pek-kliang-d1:/mnt/$barcode/rootfs/
+    ssh root@pek-kliang-d1 tar -xf /mnt/$barcode/rootfs/$rootfs -C /mnt/$barcode/rootfs/
+    fi
+    #echo $?
+    [ $? == 0 ] || exit 1
+    echo 'Copy kernel and rootfs to board successfully!'
+
+}
+
+
+get_opt()
+{
+    while getopts ":t:f:hdcn" opt
+    do
+        case $opt in
+            t|target) 
+                barcode=$OPTARG;;
+
+            f|file) 
+                build_dir=$OPTARG;;
+
+            h|help)
+                myhelp
+		exit 1;;
+            d|debug)
+                file_path
+                debug_info
+                exit 1;;                
+            n|nfs)
+                file_path
+                nfs_copy
+                exit 1;;                
+            c|copy)
+                file_path
+                copy_image
+                exit 1;;                
+            ?)
+                echo "error!!!"
+                myhelp
+		exit 1;;	
+         esac
+
+    done
+}
+if [ $# = 0 ];then
+    myhelp
+    exit 1
+fi
+
+get_opt $@
+file_path
+copyFile
