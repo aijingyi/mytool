@@ -1,0 +1,89 @@
+
+
+
+WRL10_19_GIT=/lpg-build/cdc/fast_prod/WRL10_19/WRL10_19_GIT/wrlinux-10/setup.sh
+WRL10_18_GIT=/lpg-build/cdc/fast_prod/WRL10_18/WRL10_18_GIT/wrlinux-10/setup.sh
+WRL10_17_GIT=/lpg-build/cdc/fast_prod/WRL10_17/WRL10_17_GIT/wrlinux-10/setup.sh
+
+WRL10_17_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_17/ |grep RCPL | tail -n1`
+WRL10_17=/lpg-build/cdc/fast_prod/WRL10_17/${WRL10_17_RCPL}/wrlinux-10/setup.sh
+
+WRL10_18_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_18/ |grep RCPL | tail -n1`
+WRL10_18=/lpg-build/cdc/fast_prod/WRL10_18/${WRL10_18_RCPL}/wrlinux-10/setup.sh
+
+WRL10_19_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_19/ |grep RCPL | tail -n1`
+WRL10_19=/lpg-build/cdc/fast_prod/WRL10_19/${WRL10_19_RCPL}/wrlinux-10/setup.sh
+
+WRL9_RCPL=`ls /lpg-build/cdc/fast_prod/wrlinux90RCPL/ | grep RCPL | tail -n1`
+WRL9=/lpg-build/cdc/fast_prod/wrlinux90RCPL/${WRL9_RCPL}/wrlinux-9/setup.sh
+
+WRL8_RCPL=`ls /lpg-build/cdc/fast_prod/wrlinux80RCPL | grep RCPL |tail -n1`
+WRL8=/lpg-build/cdc/fast_prod/wrlinux80RCPL/${WRL8_RCPL}/wrlinux-8/wrlinux/configure
+
+
+help_info="
+wrsetup 19: print WRL10_19 GIT setup\n
+wrsetup 18: print WRL10_18 GIT setup\n
+wrsetup 17: print WRL10_17 GIT setup\n
+wrsetup 19r: print WRL10_19 RCPL setup\n
+wrsetup 18r: print WRL10_18 RCPL setup\n
+wrsetup 17r: print WRL10_17 RCPL setup\n
+wrsetup 9: print WRL9 RCPL setup\n
+wrsetup 8: print WRL8 RCPL setup\n"
+
+bug_name=$1
+
+verify()
+{
+    bug_path=/folk/kliang/kevin/tmp/${bug_name}
+
+    touch ${bug_path}
+    #project="Verified PASS with wrlinux80RCPL/RCPL0027_LX03"
+    #project="Verified PASS with WRL10_17/RCPL0013_LX02"
+    project="Verified PASS with WRL10_18/RCPL0002_LX03"
+    echo $project > ${bug_path}
+    echo "" >> ${bug_path}
+    echo "1. Project" >>${bug_path}
+    echo "" >>${bug_path}
+    echo "2. Check the commits are here" >>${bug_path}
+    echo "" >>${bug_path}
+   echo "3. Boot the target successfully " >>${bug_path}
+    echo "" >>${bug_path}
+    echo "4. On the target" >>${bug_path}
+    echo "" >>${bug_path}
+}
+
+case $1 in
+    19)
+        wr_setup=${WRL10_19_GIT}
+        ;;
+    18)
+        wr_setup=${WRL10_18_GIT}
+        ;;
+    17)
+        wr_setup=${WRL10_17_GIT}
+        ;;
+    19r)
+        wr_setup=${WRL10_19}
+        ;;
+    18r)
+        wr_setup=${WRL10_18}
+        ;;
+    17r)
+        wr_setup=${WRL10_17}
+        ;;
+    9)
+        wr_setup=${WRL9}
+        ;;
+    8)
+        wr_setup=${WRL8}
+        ;;
+    *)
+        echo please input correct arguments.
+        echo -e $help_info
+        ;;
+esac
+
+
+echo ${wr_setup}
+
