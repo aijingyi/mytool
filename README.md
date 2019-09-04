@@ -1,5 +1,8 @@
-# python
-python scripts
-In this program, I can make many python scripts from my jobs.
-powered by kai.liang@i-soft.com.cn
-data: 20170309
+
+blog-spider.py  统计测试中心同事某一月的发布文章数量
+
+auth.py  公司外网认证工具
+
+weekpaper-spider.py 统计测试中心同事最近发布的一篇周报
+
+bugQuips.py 提取bugzilla系统所有的quips
