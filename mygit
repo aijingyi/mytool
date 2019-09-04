@@ -1,0 +1,176 @@
+#!/bin/bash
+
+config()
+{
+    hu=Jianwei.Hu@windriver.com
+    
+    gao=Wei.Gao@windriver.com
+    
+    dong=Xiangyu.Dong@windriver.com
+    
+    lei=Lei.Yang@windriver.com
+    
+    kai=Kai.Liang@windriver.com
+    
+    cc=lpd-eng-tr@windriver.com
+
+    #Tech Review:
+    ta=$gao
+    #Gatekeeper:
+    gk=$hu
+    #Email to me
+    me=$kai
+    #Email cc 
+    cc=$cc
+
+    #if version is V2, please add "#" after ver=
+    #ver="[V2]"
+    ver=
+    
+    subject="Update kts testcases: interrupt_number_mapping [LTAFLTS-1114]"
+    
+    #The branch you want to merge
+    #branch="WRLINUX_10_17_HEAD, WRLINUX_10_18_HEAD, master"
+    branch="master"
+
+    #Testing Commands:
+    cmd='./runtest.sh'
+    #Testing, Expected Results:
+    #You should write your results to this file
+    result=outgoing/results
+    if [ ! -f $result ]; then
+        echo "You should write your results to outgoing/results file"
+        exit 1
+    fi
+
+    new_rr=outgoing/rr
+    new_rr_tail=outgoing/rr_tail
+
+    wrgit rr > outgoing/tmp
+    content=`cat outgoing/tmp`
+    patch=`cat outgoing/tmp | grep "patch$"`
+    for pa in $patch; do
+        all_patch="$all_patch $pa"
+    done
+
+    rr=`echo $content | grep rr$ | awk '{print $NF}'`
+
+    issue=`cat $patch |grep "Issue" |awk '{print $NF}'`
+    #subject=`cat $patch | grep ^Subject |awk -F"] " '{print $NF}'`
+    rr_subject="Subject: [Review request]$ver $subject"
+    
+    cp $rr $new_rr
+}
+
+echo_args()
+{
+    echo "###########################"
+    #echo Subject: $rr_subject
+    echo Summary: $subject
+    echo Issue: $issue
+    echo patch file: $patch
+    echo rr: $rr
+    echo "###########################"
+}
+
+edit_rr()
+{
+    cat > $new_rr_tail  <<EOF
+
+* Applicable to
+
+* Tested configurations
+
+  Arch    built      boot     boardname
+  -------------------------------------
+  MIPS      n         n
+  MIPS64    n         n
+  MIPS64n32 n         n
+  ARM32     n         n
+  ARM64     n         n
+  x86       n         n
+  x86_64    n         n
+  PPC       n         n
+  PPC64     n         n
+  SPARC64   n         n
+
+
+====== Reviewer Checklist ======
+[Submitters: make sure that your review doesn't trigger any checkmarks!]
+http://lxgit.wrs.com/cgit/bin.git/tree/etc/review.txt
+EOF
+    ta_name=`echo $ta | awk -F"@" '{print $1}'`
+    gk_name=`echo $gk | awk -F"@" '{print $1}'`
+    branch_tag=`grep "Branch Tag:" $rr`
+    sed -i '1,6d' $new_rr
+    sed -i "1i $rr_subject" $new_rr
+    sed -i "s@Summary:@Summary: $subject@g" $new_rr
+    sed -i "s/Tech Review:/Tech Review: $ta_name/" $new_rr
+    sed -i "s/Gatekeeper:/Gatekeeper: $gk_name/" $new_rr
+    sed -i "s/$branch_tag/Branch Tag: $branch/" $new_rr
+    sed -i "s/tests                               n/tests                               y/" $new_rr
+    cmd_line=`grep  "* Commands" $new_rr -n | cut -d ":" -f 1`
+    cmd_l=`expr $cmd_line + 1`
+    sed -i "${cmd_l}i $cmd" $new_rr
+    result_line=`grep  "* Expected Results" $new_rr -n | cut -d ":" -f 1`
+    result_l=`expr $result_line + 1`
+    rr_end_line=`awk 'END{print NR}' $new_rr`
+    sed -i ${result_l}','${rr_end_line}'d' $new_rr
+    cat $result >> $new_rr
+    cat $new_rr_tail >> $new_rr
+    rm -rf $new_rr_tail
+
+}
+
+send_email()
+{
+    #wrgit send-email --compose --subject "[Review request] xxx" --to Jianwei.Hu@windriver.com  --to Wei.Gao@windriver.com --to kai.liang@windriver.com  --cc lpd-eng-tr@windriver.com xx.pacth
+    echo Send email now.....
+    #wrgit send-email  --no-chain-reply-to --to $ta  --to $gk --to $me  --cc $cc $new_rr $all_patch
+    if [ "$debug" == "1" ]; then
+        echo debug send email to $me
+        wrgit send-email   --no-chain-reply-to --to $me  $new_rr $all_patch
+    else
+        echo send email to $a $gk
+        wrgit send-email  --no-chain-reply-to --to $ta  --to $gk --to $me  --cc $cc $new_rr $all_patch
+    fi    
+echo send mail sucessfully!
+}
+
+help()
+{
+    echo help
+}
+get_parameter()
+{
+    while getopts ":dqh" FLAG; do
+        case $FLAG in
+            d)  #set option "d"
+                echo debug
+                debug=1
+                ;;
+            q)  #set option "q"
+                debug=0
+                ;;
+            h)  #show help
+                help
+                ;;
+            \?) #unrecognized option - show help
+                echo -e \\n"Option -$OPTARG not allowed."
+                help
+                ;;
+        esac
+    done
+    shift $((OPTIND-1))  #This tells getopts to move on to the next argument.
+}
+
+get_parameter $@
+config
+echo_args
+edit_rr
+send_email
+
+
+# git cherry-pick
+
+#git push ssh://git.wrs.com/git/projects/wassp-repos/testcases/wrlinux 
