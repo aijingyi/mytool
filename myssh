@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# ssh to server simplely
+myhome=~
+server_id=$1
+#test_server='15 16 17 18 19 20 21'
+#ssh -D 9799 -qTfnN kliang@ala-lpd-test1.wrs.com
+# ssh-keygen -f "$myhome/.ssh/known_hosts" -R 128.224.179.38
+run_cmd()
+{
+    echo "$(whoami)@$(hostname):$(pwd)# $1"
+    eval $1
+    val=$?
+    return $val
+}
+
+
+echo ${server_id} | grep "^[0-9][0-9]*\.[0-9][0-9]*$" > /dev/null
+if [ $? == 0 ];then
+    run_cmd "ssh-keygen -f \"$myhome/.ssh/known_hosts\" -R 128.224.$*"
+    #run_cmd "sed -i '/128.224.$**/d' /folk/kliang/.ssh/known_hosts"
+    #run_cmd "ssh-keygen -f '/folk/kliang/.ssh/known_hosts' -R root@128.224.$*"
+    run_cmd "sshpass -p root ssh -o StrictHostKeyChecking=no root@128.224.$* "
+elif [ ${server_id} = 4 ]; then
+    run_cmd "ssh -X kliang@pek-lpgtest4"
+elif [ ${server_id} = proxy  ]; then
+    run_cmd "ssh -D 9799 -qTfnN kliang@ala-lpd-test1.wrs.com"
+elif grep '^[[:digit:]].*$' <<< "${server_id}" &> /dev/null; then
+    run_cmd "ssh -X kliang@pek-lpgtest${server_id}  "
+    cd /buildarea1/kliang/project/
+elif [ ${server_id} = proxy ];then
+    {ssh -D 9799 -qTfnN kliang@ala-lpd-test1.wrs.com}
+
+else 
+    run_cmd "ssh-keygen -f \"$myhome/.ssh/known_hosts\" -R ${server_id##*@}"
+    run_cmd "sshpass -p root ssh -o StrictHostKeyChecking=no $* "
+ 
+fi 
+
+
