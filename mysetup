@@ -1,0 +1,470 @@
+#!/bin/bash
+#build project
+#powered by kai.liang@windriver.com
+
+#target_name=IMX7D-SABRESD
+
+#cur_path=`cd $(dirname $0); pwd -P`
+cur_path=`pwd -P`
+echo $cur_path
+
+
+# read args
+
+read_head()
+{
+    echo "Please input commit:"
+    read input_co
+    [ -z $ker ] && input_co=
+}
+read_version()
+{
+    #test_layer=/lpg-build/cdc/WASSP_LINUX_1018/testcases/wrlinux/
+    layer_1017=/net/pek-lpgtest18/buildarea1/kliang/wrlinux_1017
+    layer_1018=/net/pek-lpgtest18/buildarea1/kliang/wrlinux_1018
+    layer_1019=/net/pek-lpgtest18/buildarea1/kliang/wrlinux
+
+    WRL10_19_GIT=/lpg-build/cdc/fast_prod/WRL10_19/WRL10_19_GIT/wrlinux-10/setup.sh
+    WRL10_18_GIT=/lpg-build/cdc/fast_prod/WRL10_18/WRL10_18_GIT/wrlinux-10/setup.sh
+    WRL10_17_GIT=/lpg-build/cdc/fast_prod/WRL10_17/WRL10_17_GIT/wrlinux-10/setup.sh
+
+    WRL10_17_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_17/ |grep RCPL | tail -n1`
+    WRL10_17=/lpg-build/cdc/fast_prod/WRL10_17/${WRL10_17_RCPL}/wrlinux-10/setup.sh
+
+    WRL10_18_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_18/ |grep RCPL | tail -n1`
+    WRL10_18=/lpg-build/cdc/fast_prod/WRL10_18/${WRL10_18_RCPL}/wrlinux-10/setup.sh
+
+    echo "Please choose wrlinux version:
+          1. 1018git (default)
+          2. 1018release
+          3. 1017git
+          4. 1017release
+          5. 1019git"
+    read ver
+    [ -z $ver ] && ver=1
+    case $ver in
+        1|1018git)
+            test_layer=${layer_1018}
+            wr_version=${WRL10_18_GIT};;
+        2|1018release)
+            test_layer=${layer_1018}
+            wr_version=${WRL10_18};;
+        3|1017git)
+            test_layer=${layer_1017}
+            wr_version=${WRL10_17_GIT};;
+        4|1017release)
+            test_layer=${layer_1017}
+            wr_version=${WRL10_17};;
+        5|1019git)
+            test_layer=${layer_1019}
+            wr_version=${WRL10_19_GIT};;
+        *)
+            echo "error kernel type!"
+            exit 3;;
+    esac
+}
+
+
+read_mach()
+{
+    echo 'Please choose machines:
+          1. qemux86-64 (default)
+          2. qemux86
+          3. intel-x86-64
+          4. intel-x86-32
+          5. intel-skylake-avx512-64
+          6. intel-skylake-64
+          7. intel-haswell-64
+          8. nxp-ls10xx
+          9. nxp-ls1046
+          10. axxiaarm
+          11. axxiaarm64
+          12. nxp-imx6
+          13. nxp-imx7
+          14. bcm-587xx
+          15. intel-socfpga-64b
+          16 xilinx-zynqmp
+          17 mpc8315e-rdb
+          18. nxp-ls1043'
+    read mach
+    [ -z $mach ] && mach=1 
+    case $mach in
+        1|qemux86-64)
+            machines=qemux86-64;;
+        2|qemux86)
+            machines=qemux86;;
+        3|intel-x86-64)
+            machines=intel-x86-64;;
+        4|intel-x86-32)
+            machines=intel-x86-32;;
+        5|intel-skylake-avx512-64)
+            machines=intel-skylake-avx512-64;;
+        6|intel-skylake-64)
+            machines=intel-skylake-64;;
+        7|intel-haswell-64)
+            machines=intel-haswell-64;;
+        8|nxp-ls10xx)
+            machines=nxp-ls10xx;;
+        9|nxp-ls1046)
+            machines=nxp-ls1046;;
+        10|axxiaarm)
+            machines=axxiaarm;;
+        11|axxiaarm64)
+            machines=axxiaarm64;;
+        12|nxp-imx6)
+            machines=nxp-imx6;;
+        13|nxp-imx7)
+            machines=nxp-imx7;;
+        14|bcm-587xx)
+            machines=bcm-587xx;;
+        15|intel-socfpga-64b)
+            machines=intel-socfpga-64b;;
+        16|xilinx-zynqmp)
+            machines=xilinx-zynqmp;;
+        17|mpc8315e-rdb)
+            machines=mpc8315e-rdb;;
+        18|nxp-ls1043)
+            machines=nxp-ls1043;;
+        *)
+            echo "error number!"
+            exit 1;;
+    esac
+}
+read_dis()
+{
+    echo "Please choose distro:
+          1. wrlinux (default)
+          2. wrlinux-cgl
+          3. wrlinux-image-glibc-core
+          4. wrlinux-small
+          5. wrlinux-std-sato
+          6. wrlinux-ovp
+          7. nodistro"
+    read dis
+    [ -z $dis ] && dis=1
+    case $dis in
+        1|wrlinux|glibc-std)
+            distro=wrlinux
+            bitbake_arg=wrlinux-image-glibc-std;;
+        2|wrlinux-cgl|glibc-cgl)
+            distro=wrlinux-cgl
+            bitbake_arg=wrlinux-image-glibc-cgl;;
+        3|wrlinux-core|glibc-core)
+            distro=wrlinux
+            bitbake_arg=wrlinux-image-glibc-core;;
+        4|wrlinux-small|glibc-small)
+            distro=wrlinux-small
+            bitbake_arg=wrlinux-image-glibc-small;;
+        5|wrlinux-std-sato|glibc-std-sato)
+            distro=wrlinux-std-sato
+            bitbake_arg=wrlinux-image-glibc-std-sato;;
+        6|wrlinux-ovp|glibc-ovp)
+            distro=wrlinux-ovp
+            bitbake_arg=wrlinux-image-ovp-kvm;;
+        7|nodistro)
+            distro=nodistro
+            bitbake_arg=core-image-base;;
+        *)
+            echo "error number!"
+            exit 1;;
+    esac
+}
+
+read_kernel()
+{
+    echo "Please choose kernel type:
+          1. standard (default)
+          2. preempt-rt"
+    read ker
+    [ -z $ker ] && ker=1
+    case $ker in
+        1|standard)
+            kernel=standard;;
+        2|preempt-rt)
+            kernel=preempt-rt;;
+        *)
+            echo "error kernel type!"
+            exit 3;;
+    esac
+}
+
+read_test()
+{
+    echo "Please choose test group:
+          1. NULL (default)
+          2. BTS
+          3. KTS
+          4. LTP
+          5. userspace
+          6. kdump
+          7. dpdk
+          8. benchmark"
+    read test_g
+    [ -z $test_g ] && test_g=1
+    case $test_g in
+        1|null)
+            test_group=null;;
+        2|bts|BTS)
+            test_group=bts;;
+        3|kts|KTS)
+            test_group=kts;;
+        4|ltp|LTP)
+            test_group=ltp;;
+        5|userspace)
+            test_group=userspace;;
+        6|kdump)
+            test_group=kdump;;
+        7|dpdk)
+            test_group=dpdk;;
+        8|benchmark)
+            test_group=benchmark;;
+        *)
+            echo "error test group!"
+            exit 4;;
+     esac
+}
+
+read_multi()
+{
+    echo "Please choose multilib:
+          1. lib64 (default)
+          2. lib32"
+    read multi
+    [ -z $multi ] && multi=1
+    case $multi in
+        1|lib64)
+            multilib=lib64;;
+        2|lib32)
+            multilib=lib32;;
+        *)
+            echo "error multilib!"
+            exit 5;;
+    esac 
+}
+read_extra_config()
+{
+    echo "Please choose extra-config:
+          1. null
+          2. tmp xfce kdump
+          3. tpm2 xfce kexec kdump intel-persisten-memory
+          4. userspace
+          5. feature/kexec feature/kdump
+          6. intel-persistent-memory
+          "
+    read extra_c
+    [ -z $extra_c ] && extra_c=1
+    case $extra_c in
+        1|1e)
+            extra_config=;;
+        2|2e)
+            extra_config="feature/tpm2 feature/xfce feature/kexec feature/kdump";;
+        3|3e)
+            extra_config="feature/linux-yocto-dev feature/toolchain-next feature/userspace-next feature/tpm2 feature/xfce feature/kexec feature/kdump feature/intel-persistent-memory ";;
+        4|4e)
+            extra_config="feature/LAMP feature/gdb feature/ipv6 feature/krb5 feature/ntp feature/target-toolchain feature/test --layers meta-filesystems meta-virtualization meta-xfce";;
+       5|5e)
+            extra_config="feature/kexec feature/kdump";;
+       6|6e)
+            extra_config="feature/linux-yocto-dev feature/toolchain-next feature/userspace-next feature/intel-persistent-memory";;
+        *)
+            extra_config=$extra_c
+            echo $extra_config
+            exit 5;;
+    esac 
+}
+
+
+out_args()
+{
+    build_path=/buildarea1/$(whoami)/build_dir/${input_co}${test_group}_${machines}_${kernel}_${distro}_${multilib}_$(date +%m%d%H%M)
+    [ ! -d $build_path ] && mkdir -p $build_path 
+     cd $build_path
+    
+    cmd=${machines}_${kernel}_${distro}_${test_group}_${multilib}
+    echo $wr_version > ${build_path}/$cmd
+    echo $machines > ${build_path}/$cmd
+    echo $distro  >> ${build_path}/$cmd
+    echo $kernel  >> ${build_path}/$cmd
+    echo $test_group  >> ${build_path}/$cmd
+    echo $multilib  >> ${build_path}/$cmd
+
+    echo "==================================="
+    echo git versions: $wr_version
+    echo machines: $machines
+    echo distro: $distro
+    echo kernel: $kernel
+    echo test group: $test_group
+    echo multilib: $multilib
+    echo extra_config: $extra_config
+    echo bitbake: $bitbake_arg
+    echo "==================================="
+}
+
+run_cmd()
+{
+    echo $1
+    echo $1 >> ${build_path}/cmd.log 
+    eval $1 
+}
+
+
+setup_pro()
+{
+
+
+    #git setup
+    [ $ver == "5" ] || [ $ver == 1019git ] || [ $ver == 1019release ]  && extra_config="$extra_config feature/linux-yocto-dev feature/toolchain-next feature/userspace-next "
+    [ $test_group == "kdump" ]  && template='--templates feature/kexec feature/kdump '
+    #run_cmd "${wr_version} --accept-eula yes  --dl-layers  --machines $machines --distro $distro $template"
+    [ $test_group == userspace ] && template='--templates feature/LAMP feature/gdb feature/ipv6 feature/krb5 feature/ntp feature/target-toolchain feature/test --dl-layers --layers meta-filesystems meta-virtualization meta-xfce'
+
+    # dvd setup
+    #run_cmd "/lpg-build/cdc/fast_prod/WRL10_17/WRL10_17_GIT/wrlinux-10/setup.sh --accept-eula yes  --dl-layers --machines $machines --distro $distro $template"
+    [ -n "$extra_config" ] && template="--templates $extra_config"
+    #[ $test_group == "bts" ] && template=" $template feature/dpdk feature/bsp-extras --layers meta-dpdk"
+    run_cmd "${wr_version} --accept-eula yes  --dl-layers --machines $machines --distro $distro $template"
+
+
+    #set env
+    if [ -f environment-setup-x86_64-wrlinuxsdk-linux ]; then
+        run_cmd "source environment-setup-x86_64-wrlinuxsdk-linux"
+    fi
+    #[ $ver != 1019git ] && [ $ver != 1019release ] && run_cmd "source environment-setup-x86_64-wrlinuxsdk-linux"
+    run_cmd "source oe-init-build-env build"
+
+    #add layers
+    if [ $test_group == "bts"  ];then
+    {
+        run_cmd "bitbake-layers add-layer ${test_layer}/wr-testing/bts-dev/" 
+        run_cmd "echo require templates/feature/bts/template.conf >> conf/local.conf"
+        if [ -e $cur_path/test_plan.ini ]; then
+            cat $cur_path/test_plan.ini
+            #run_cmd "rm -rf *ini"
+            run_cmd "cp $cur_path/test_plan.ini test_plan.ini"
+            run_cmd 'echo ACTIVE_PLAN = \"test_plan.ini\" >> conf/local.conf'
+        fi
+        #run_cmd "cat ~/wrlinux/test-plan/bts.list > ${target_name}_${kernel}.ini"
+        #run_cmd 'echo IMAGE_INSTALL_append += \"kexec-tools\" >> conf/local.conf'
+    }
+    
+
+    elif [ $test_group == "ltp"  ];then
+    {
+        run_cmd "bitbake-layers add-layer ${test_layer}/wr-testing/kts-dev/" 
+        run_cmd "echo require templates/feature/ltp/template.conf >> conf/local.conf"
+    }
+    
+
+    elif [ $test_group == "kts"  ];then
+    {
+        run_cmd "bitbake-layers add-layer ${test_layer}/wr-testing/kts-dev/" 
+        run_cmd "echo require templates/feature/wr-kts/template.conf >> conf/local.conf"
+    }
+    
+    elif [ $test_group == "userspace"  ];then
+    {
+        run_cmd "bitbake-layers add-layer ${test_layer}/wr-testing/userspace/" 
+        #run_cmd "cat >> conf/local.conf <<EOF
+        #run_cmd 'sed -i \"s/BB_NO_NETWORK ?= \'1\'/BB_NO_NETWORK ?= \'0\'/g\" conf/local.conf'
+        sed -i "s/BB_NO_NETWORK ?= '1'/BB_NO_NETWORK ?= '0'/g" conf/local.conf
+run_cmd 'echo WRTEMPLATE_append = \" feature/userspace-test\" >> conf/local.conf'
+run_cmd 'echo IMAGE_ROOTFS_EXTRA_SPACE = \"5242880\" >>conf/local.conf'
+run_cmd 'echo DEBUG_BUILD = \"1\" >>conf/local.conf'
+run_cmd 'echo EXTRA_IMAGE_FEATURES_append += \" dbg-pkgs\" >> conf/local.conf'
+run_cmd 'echo BB_NO_NETWORK_pn-lmbench = \"0\" >> conf/local.conf'
+run_cmd 'echo IMAGE_FSTYPES_remove += \" wic wic.bmap live\" >> conf/local.conf'
+run_cmd 'cp /folk/kliang/wrlinux/test-plan/test_plan.list .'
+
+echo "
+PNWHITELIST_filesystems-layer += 'fuse'
+PNWHITELIST_openembedded-layer += 'logwarn'
+PNWHITELIST_openembedded-layer += 'dfu-util'
+PNWHITELIST_networking-layer += 'samba'
+PNWHITELIST_openembedded-layer += 'openldap'
+PNWHITELIST_networking-layer += 'libtdb'
+PNWHITELIST_networking-layer += 'libtevent'
+" >> conf/local.conf
+#EOF"
+
+    }
+
+    elif [ $test_group == "kdump"  ];then
+    { 
+        #run_cmd 'echo IMAGE_INSTALL_append = \" makedumpfile\" >>conf/local.conf'
+        run_cmd "bitbake-layers add-layer ${test_layer}/wr-testing/bts-dev/" 
+        run_cmd "echo require templates/feature/bts/template.conf >> conf/local.conf"
+
+        #run_cmd 'echo IMAGE_INSTALL_append = \"kexec-tools\" >> conf/local.conf'
+        #run_cmd 'echo IMAGE_INSTALL_append = \" dpdk-examples dpdk-test\" >>conf/local.conf'
+        #run_cmd 'cat /folk/kliang/wrlinux/test-plan/kdump.list >> test_plan.list'
+        run_cmd "rm -rf *_${kernel}.ini"
+        run_cmd "cat ~/wrlinux/test-plan/kdump.list > test_${kernel}.ini"
+    }
+    
+    elif [ $test_group == "benchmark" ]; then
+    {
+        run_cmd "bitbake-layers add-layer ${test_layer}/wr-testing/benchmark-dev"
+        run_cmd "echo require templates/feature/benchmark/template.conf >> conf/local.conf" 
+    }
+    fi
+
+    if [ $kernel == "preempt-rt" ];then
+    {
+        #sed -i "/#PREFERRED_PROVIDER_virtual\/kernel = \".*\"$/s/^.*$/PREFERRED_PROVIDER_virtual\/kernel = \"linux-yocto\"/g" conf/local.conf
+
+        run_cmd 'sed -i "/#PREFERRED_PROVIDER_virtual\/kernel = \".*\"$/s/^.*$/PREFERRED_PROVIDER_virtual\/kernel = \"linux-yocto-rt\"/g" conf/local.conf'
+
+    }
+    fi
+
+    #[ $test_group == EMPTY ] || run_cmd 'echo IMAGE_FSTYPES += \" tar.bz2\" >> conf/local.conf && echo BB_NUMBER_THREADS ?= \"24\" >> conf/local.conf && echo PARALLEL_MAKE ?= \"-j 24\" >> conf/local.conf && echo BB_NO_NETWORK_pn-lmbench = \"0\" >> conf/local.conf'
+
+    
+    if [ $multilib == "lib64" ]; then
+    {
+        run_cmd "bitbake $bitbake_arg"
+            
+    }
+    elif [ $multilib == "lib32" ]; then
+    {
+        run_cmd "bitbake lib32-$bitbake_arg"
+        #if [ $distro == "wrlinux-std-sato" ]; then
+         #   run_cmd "bitbake lib32-wrlinux-image-glibc-std-sato"
+        #else
+         #   run_cmd "bitbake wrlinux-image-glibc-std"
+        #fi
+    }
+    fi
+
+}
+
+#read_head
+read_version
+read_mach
+read_dis
+read_kernel
+read_test
+read_multi
+read_extra_config
+out_args
+if [ x$1 == xmake ]; then
+    exit 1
+else
+    setup_pro
+fi
+# mysetup-ltp --machines intel-x86-64 --distro wrlinux
+# mysetup-ltp --machines nxp-ls10xx --distro wrlinux
+# mysetup-ltp --machines axxiaarm --distro wrlinux
+# mysetup-ltp --machines axxiaarm --distro wrlinux-cgl
+# mysetup-ltp --machines axxiaarm64 --distro wrlinux
+#
+# setup.sh --accept-eula yes  --machines intel-x86-64 --templates feature/dpdk --distro wrlinux --layer meta-dpdk --dl-layers
+# setup.sh --accept-eula yes  --machines intel-x86-64 --distro wrlinux --dl-layers
+
+#bitbake-layers add-layer /buildarea1/kliang/wrlinux/wr-testing/bts-dev/
+# echo require templates/feature/bts/template.conf >> conf/local.conf
+
+#linux8
+#--enable-board=intel-x86-64   --enable-kernel=standard   --enable-rootfs=glibc-std   --with-layer=/buildarea1/lliu2/wrl8/wrlinux/wr-testing/bts-dev   --with-template=feature/bts   --enable-test=yes   --enable-internet-download=yes   --enable-ccache=no   --enable-reconfig
+#--enable-board=intel-x86-64   --enable-kernel=standard   --enable-rootfs=glibc-std --enable-test=yes   --enable-internet-download=yes   --enable-ccache=no   --enable-reconfig
+# --machines=qemux86-64 --distro=wrlinux-std-sato --dl-layers --all-layers --templates=feature/strict-qa --repo-verbose --verbose --accept-eula=yes
