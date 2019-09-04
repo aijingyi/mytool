@@ -1,0 +1,146 @@
+#!/usr/bin/env python
+
+############################
+#Powered by kai.liang@windriver.com
+#Analyze your defects
+#2019.1.11
+###########################
+
+
+from __future__ import division
+import commands
+import json
+import urllib
+import getpass
+import os
+
+
+class Jira_Filter():
+
+    def __init__(self):
+
+        self.url = "https://jira.wrs.com/rest/api/2/search?maxResults=500&jql=" 
+        self.jira_browse = "https://jira.wrs.com/browse/"
+        #get your linux username
+        self.username=getpass.getuser()
+        #self.username="zzhao1, kliang, wgao, xdong, lyang0, jhu2, rqu1, zwang7, sjiao, pyan, jkang, lwang4, lliu2, xhou, flian, zliu2"
+        #self.username="kliang"
+        self.filename = "%s_bug_top.txt" %(self.username.split(",")[0] )
+
+
+        if os.path.exists(self.filename):
+            os.remove(self.filename)
+
+        self.project = '"LIN1019","LIN1018", "LIN10", "LIN9","LIN8","LIN7",\
+"LIN6", "LINPUL8", "LINPULLT17","OVP6", "OVP7","OVP8", "OVP9", "CGP5", "CGP6",\
+ "CGP7", "CGP8", "CGP9", "SCP6","SCP7", "SCP8", "SCP9", "IDP3"'
+        self.create_time = 'created  > "2017/12/31" AND created < "2019/01/01"'
+        self.jql_all = 'project in (%s)  AND reporter in (%s)  AND %s' %(self.project,self.username,self.create_time)
+        self.jql_test_blocking = 'project in (%s)  AND reporter in (%s)  AND %s AND labels = TEST_BLOCKING' %(self.project,self.username,self.create_time)
+
+        self.jql_valid = '''project in (%s)  AND reporter in (%s)  AND %s AND status in (Resolved, Closed, "Checked In") AND resolution in (Fixed, "Won't Fix")''' %(self.project, self.username, self.create_time)
+        self.jql_valid_all = 'project in (%s)  AND reporter in (%s)  AND %s AND status in (Resolved, Closed, "Checked In")' %(self.project, self.username,self.create_time)
+
+        #self.jql_verified = 'project in (LIN8, CGP8, SCP8, OVP8, "Linux Pulsar 8", "IDP 3.x", "Linux 10.17", "Linux 10.18","LIN1019")  AND tester in (%s)  AND %s' % (self.username, self.create_time)
+        self.jql_verified = 'project in (%s)  AND (tester in (%s) OR ( (reporter in (%s) AND labels not in (Verified, verified) ) )) AND status = Closed AND %s' % (self.project, self.username, self.username, self.create_time)
+        
+        self.jql_need_verify = 'project in (%s)  AND ((tester in (%s)) OR (reporter in (%s))) AND status = Resolved AND resolution in (Fixed)' % (self.project, self.username, self.username)
+   
+    def curl_to_jira(self,jql):
+        jql_code = urllib.quote(jql)
+        url_data = self.url + jql_code
+
+        curl_data = 'curl -sb -H "Content-Type: application/json" -u apiuser:apiuser -X GET "%s"' % url_data
+        out = commands.getoutput(curl_data)
+        out = json.loads(out)
+        defects_name = ""
+        for issue in  out["issues"]:
+            defects_name = defects_name + self.jira_browse + issue["key"] + "\n"
+        num = out["total"]
+    
+        return num, defects_name
+
+    def curl_to_jira_title(self,jql):
+        print jql
+        jql_code = urllib.quote(jql)
+        url_data = self.url + jql_code
+
+        curl_data = 'curl -sb -H "Content-Type: application/json" -u apiuser:apiuser -X GET "%s"' % url_data
+        out = commands.getoutput(curl_data)
+        out = json.loads(out)
+        defects_name = ""
+        for issue in  out["issues"]:
+            #print issue
+            #print issue.keys()
+            defects_name = defects_name + self.jira_browse + issue["key"] + "\n" 
+        num = out["total"]
+    def write_txt(self,txt):
+        with open(self.filename,"a+") as f:
+            f.write(txt)
+        
+    def all_defects(self):
+
+        # All defects
+        num, defects_name = self.curl_to_jira(self.jql_all)
+        all_nums = "\nNumbers of all submitted defects: %s\n" % num
+        self.write_txt(all_nums)
+        self.write_txt(defects_name)
+
+    def defects_with_p(self):
+
+        #Defects with P1, P2, P3, P4:
+        for p in ["P1","P2","P3","P4"]:
+            self.jql_p = 'project in (%s)  AND reporter in (%s)  AND Priority = %s AND %s' % (self.project,self.username, p, self.create_time)
+            num, defects_name = self.curl_to_jira(self.jql_p)
+            num_txt =  "\nNumbers of defects with %s: %s\n" % (p,num)
+            self.write_txt(num_txt)
+            self.write_txt(defects_name)
+        
+    def defects_valid_ratio(self):
+
+        #Defect Valid Ratio
+        valid_num, defects_name_valid = self.curl_to_jira(self.jql_valid)
+        valid_all_num, defects_name_invalid = self.curl_to_jira(self.jql_valid_all)
+        self.write_txt(("Numbers of valid defects: %s\nNumbers of valid and invalid defects: %s\n") %(valid_num, valid_all_num))
+        valid_ratio = valid_num / valid_all_num
+        self.write_txt('Valid Ratio of defects = {:.2%}\n'.format(valid_ratio))
+
+    def defects_verified(self):
+
+        #Defects Verified 
+        verified_num, defects_verified = self.curl_to_jira(self.jql_verified)
+        verified_txt = "\nNumbers of verified defects: %s\n" % verified_num
+        self.write_txt(verified_txt)
+        self.write_txt(defects_verified)
+
+    def defects_test_blocking(self):
+
+        #Defects with test blocking
+        blocking_num, blocking_defects = self.curl_to_jira(self.jql_test_blocking)
+        blocking_txt = "\nNumbers of TEST_BLOCKING defects: %s\n" % blocking_num
+        self.write_txt(blocking_txt)
+        self.write_txt(blocking_defects)
+    
+    def defects_need_verify(self):
+        verify_num, verify_defects = self.curl_to_jira(self.jql_need_verify)
+        verify_txt = "\nNumbers of need to verify defects: %s\n" % verify_num
+        print(verify_txt)
+        print(verify_defects)
+
+    def defects_top(self):
+
+        print("Your defects list are creating.")
+        print("Please wait ..........")
+        self.defects_valid_ratio()
+        self.all_defects()
+        self.defects_with_p()
+        self.defects_test_blocking()
+        self.defects_verified()        
+        print("Your defects list are created successfully.")
+        print("Please check the file: %s" %self.filename)
+
+if __name__ == "__main__":
+    mydefect = Jira_Filter()
+    #mydefect.defects_top()
+    mydefect.defects_need_verify()
+    
