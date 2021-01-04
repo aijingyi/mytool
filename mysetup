@@ -6,8 +6,10 @@
 
 #cur_path=`cd $(dirname $0); pwd -P`
 cur_path=`pwd -P`
-echo $cur_path
-
+#echo $cur_path
+test_file=$1
+[ -z $test_file ] || test_plan="`cat $test_file`" && echo "$test_plan"
+echo ddd
 
 # read args
 
@@ -21,9 +23,12 @@ read_version()
 {
     #test_layer=/lpg-build/cdc/WASSP_LINUX_1018/testcases/wrlinux/
     layer_1017=/net/pek-lpgtest18/buildarea1/kliang/wrlinux_1017
-    layer_1018=/net/pek-lpgtest18/buildarea1/kliang/wrlinux_1018
-    layer_1019=/net/pek-lpgtest18/buildarea1/kliang/wrlinux
+    layer_1018=/folk/kliang/lxgit/wrlinux-1018
+    #layer_1018=/net/pek-lpgtest18/buildarea1/kliang/wrlinux_1018
+    layer_1019=/folk/kliang/lxgit/wrlinux-1019
+    layer_master=/folk/kliang/lxgit/wrlinux
 
+    MASTER_WR_GIT=/lpg-build/cdc/fast_prod/WRLINUX_MASTER_WR/MASTER_WR_GIT/wrlinux-10/setup.sh
     WRL10_19_GIT=/lpg-build/cdc/fast_prod/WRL10_19/WRL10_19_GIT/wrlinux-10/setup.sh
     WRL10_18_GIT=/lpg-build/cdc/fast_prod/WRL10_18/WRL10_18_GIT/wrlinux-10/setup.sh
     WRL10_17_GIT=/lpg-build/cdc/fast_prod/WRL10_17/WRL10_17_GIT/wrlinux-10/setup.sh
@@ -34,12 +39,17 @@ read_version()
     WRL10_18_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_18/ |grep RCPL | tail -n1`
     WRL10_18=/lpg-build/cdc/fast_prod/WRL10_18/${WRL10_18_RCPL}/wrlinux-10/setup.sh
 
+    WRL10_19_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_19/ |grep RCPL | tail -n1`
+    WRL10_19=/lpg-build/cdc/fast_prod/WRL10_19/${WRL10_19_RCPL}/wrlinux-10/setup.sh
+
     echo "Please choose wrlinux version:
           1. 1018git (default)
           2. 1018release
           3. 1017git
           4. 1017release
-          5. 1019git"
+          5. 1019git
+          6. 1019release
+          7. master_wr"
     read ver
     [ -z $ver ] && ver=1
     case $ver in
@@ -58,6 +68,12 @@ read_version()
         5|1019git)
             test_layer=${layer_1019}
             wr_version=${WRL10_19_GIT};;
+        6|1019release)
+            test_layer=${layer_1019}
+            wr_version=${WRL10_19};;
+        7|master_wr)
+            test_layer=${layer_master}
+            wr_version=${MASTER_WR_GIT};;
         *)
             echo "error kernel type!"
             exit 3;;
@@ -68,63 +84,78 @@ read_version()
 read_mach()
 {
     echo 'Please choose machines:
-          1. qemux86-64 (default)
-          2. qemux86
-          3. intel-x86-64
-          4. intel-x86-32
-          5. intel-skylake-avx512-64
-          6. intel-skylake-64
-          7. intel-haswell-64
-          8. nxp-ls10xx
-          9. nxp-ls1046
-          10. axxiaarm
-          11. axxiaarm64
-          12. nxp-imx6
-          13. nxp-imx7
-          14. bcm-587xx
-          15. intel-socfpga-64b
-          16 xilinx-zynqmp
-          17 mpc8315e-rdb
-          18. nxp-ls1043'
+          1.  qemux86-64 
+          2.  qemux86
+          3.  qemuarm
+          4.  qemuarm64
+          11. intel-x86-64 (default)
+          12. intel-x86-32
+          13. intel-skylake-avx512-64
+          14. intel-skylake-64
+          15. intel-haswell-64
+          16. intel-socfpga-64b
+          21. nxp-imx6
+          22. nxp-imx7
+          23. nxp-imx8
+          24. nxp-ls1043
+          25. nxp-ls1046
+          26. nxp-ls10xx
+          27. nxp-ls20xx
+          31. axxiaarm
+          32. axxiaarm64
+          41. xilinx-zynqmp
+          51. bcm-587xx
+          52. bcm-2xxx-rpi4
+          61. mpc8315e-rdb'
     read mach
-    [ -z $mach ] && mach=1 
+    [ -z $mach ] && mach=11
     case $mach in
         1|qemux86-64)
             machines=qemux86-64;;
         2|qemux86)
             machines=qemux86;;
-        3|intel-x86-64)
+        3|qemuarm)
+            machines=qemuarm;;
+        4|qemuarm64)
+            machines=qemuarm64;;
+        11|intel-x86-64)
             machines=intel-x86-64;;
-        4|intel-x86-32)
+        12|intel-x86-32)
             machines=intel-x86-32;;
-        5|intel-skylake-avx512-64)
+        13|intel-skylake-avx512-64)
             machines=intel-skylake-avx512-64;;
-        6|intel-skylake-64)
+        14|intel-skylake-64)
             machines=intel-skylake-64;;
-        7|intel-haswell-64)
+        15|intel-haswell-64)
             machines=intel-haswell-64;;
-        8|nxp-ls10xx)
-            machines=nxp-ls10xx;;
-        9|nxp-ls1046)
-            machines=nxp-ls1046;;
-        10|axxiaarm)
-            machines=axxiaarm;;
-        11|axxiaarm64)
-            machines=axxiaarm64;;
-        12|nxp-imx6)
-            machines=nxp-imx6;;
-        13|nxp-imx7)
-            machines=nxp-imx7;;
-        14|bcm-587xx)
-            machines=bcm-587xx;;
-        15|intel-socfpga-64b)
+        16|intel-socfpga-64b)
             machines=intel-socfpga-64b;;
-        16|xilinx-zynqmp)
-            machines=xilinx-zynqmp;;
-        17|mpc8315e-rdb)
-            machines=mpc8315e-rdb;;
-        18|nxp-ls1043)
+        21|nxp-imx6)
+            machines=nxp-imx6;;
+        22|nxp-imx7)
+            machines=nxp-imx7;;
+        23|nxp-imx8)
+            machines=nxp-imx8;;
+        24|nxp-ls1043)
             machines=nxp-ls1043;;
+        25|nxp-ls1046)
+            machines=nxp-ls1046;;
+        26|nxp-ls10xx)
+            machines=nxp-ls10xx;;
+        27|nxp-ls20xx)
+            machines=nxp-ls20xx;;
+        31|axxiaarm)
+            machines=axxiaarm;;
+        32|axxiaarm64)
+            machines=axxiaarm64;;
+        41|xilinx-zynqmp)
+            machines=xilinx-zynqmp;;
+        51|bcm-587xx)
+            machines=bcm-587xx;;
+        52|bcm-2xxx-rpi4)
+            machines=bcm-2xxx-rpi4;;
+        61|mpc8315e-rdb)
+            machines=mpc8315e-rdb;;
         *)
             echo "error number!"
             exit 1;;
@@ -138,8 +169,11 @@ read_dis()
           3. wrlinux-image-glibc-core
           4. wrlinux-small
           5. wrlinux-std-sato
-          6. wrlinux-ovp
-          7. nodistro"
+          6. wrlinux-graphics
+          7. xwanland
+          8. wrlinux-ovp
+          9. ovp-guest
+          10. nodistro"
     read dis
     [ -z $dis ] && dis=1
     case $dis in
@@ -157,11 +191,21 @@ read_dis()
             bitbake_arg=wrlinux-image-glibc-small;;
         5|wrlinux-std-sato|glibc-std-sato)
             distro=wrlinux-std-sato
-            bitbake_arg=wrlinux-image-glibc-std-sato;;
-        6|wrlinux-ovp|glibc-ovp)
+            bitbake_arg=wrlinux-image-std-glibc-sato;;
+        6|wrlinux-graphics|glibc-std-sato)
+            distro=wrlinux-graphics
+            bitbake_arg=wrlinux-image-std-sato;;
+        7|xwanland|glibc-std-sato)
+            extra_config=" feature/weston-demo "
+            distro=wrlinux-graphics
+            bitbake_arg=wrlinux-image-std-sato;;
+        8|wrlinux-ovp|glibc-ovp)
             distro=wrlinux-ovp
             bitbake_arg=wrlinux-image-ovp-kvm;;
-        7|nodistro)
+        9|ovp-guest|glibc-ovp-guest)
+            distro=wrlinux-ovp
+            bitbake_arg=wrlinux-image-ovp-guest;;
+        10|nodistro)
             distro=nodistro
             bitbake_arg=core-image-base;;
         *)
@@ -190,15 +234,17 @@ read_kernel()
 
 read_test()
 {
+    [ "$distro" == "wrlinux-ovp" ] && test_group=ovp-testing && return 0 
     echo "Please choose test group:
           1. NULL (default)
           2. BTS
           3. KTS
           4. LTP
           5. userspace
-          6. kdump
-          7. dpdk
-          8. benchmark"
+          6. ovp-testing
+          7. kdump
+          8. dpdk
+          9. benchmark"
     read test_g
     [ -z $test_g ] && test_g=1
     case $test_g in
@@ -212,11 +258,13 @@ read_test()
             test_group=ltp;;
         5|userspace)
             test_group=userspace;;
-        6|kdump)
+        6|ovp-testing)
+            test_group=ovp-testing;;
+        7|kdump)
             test_group=kdump;;
-        7|dpdk)
+        8|dpdk)
             test_group=dpdk;;
-        8|benchmark)
+        9|benchmark)
             test_group=benchmark;;
         *)
             echo "error test group!"
@@ -245,32 +293,39 @@ read_extra_config()
 {
     echo "Please choose extra-config:
           1. null
-          2. tmp xfce kdump
+          2. docker dpdk kdump
           3. tpm2 xfce kexec kdump intel-persisten-memory
           4. userspace
           5. feature/kexec feature/kdump
-          6. intel-persistent-memory
+          6. dev
+          7. bcc dev
+          8. f2fstoos bcc
           "
     read extra_c
     [ -z $extra_c ] && extra_c=1
     case $extra_c in
         1|1e)
-            extra_config=;;
+            extra_config+=;;
         2|2e)
-            extra_config="feature/tpm2 feature/xfce feature/kexec feature/kdump";;
+            extra_config+=" feature/docker feature/dpdk feature/kexec feature/kdump";;
         3|3e)
-            extra_config="feature/linux-yocto-dev feature/toolchain-next feature/userspace-next feature/tpm2 feature/xfce feature/kexec feature/kdump feature/intel-persistent-memory ";;
+            extra_config+=" feature/tpm2 feature/xfce feature/kexec feature/kdump feature/intel-persistent-memory ";;
         4|4e)
-            extra_config="feature/LAMP feature/gdb feature/ipv6 feature/krb5 feature/ntp feature/target-toolchain feature/test --layers meta-filesystems meta-virtualization meta-xfce";;
+            extra_config+=" feature/LAMP feature/gdb feature/ipv6 feature/krb5 feature/ntp feature/target-toolchain feature/test --layers meta-filesystems meta-virtualization meta-xfce";;
        5|5e)
-            extra_config="feature/kexec feature/kdump";;
+            extra_config+=" feature/kexec feature/kdump";;
        6|6e)
-            extra_config="feature/linux-yocto-dev feature/toolchain-next feature/userspace-next feature/intel-persistent-memory";;
+            extra_config+=" feature/linux-yocto-dev feature/toolchain-next feature/userspace-next";;
+       7|7e)
+            extra_config+=" feature/linux-yocto-dev feature/toolchain-next feature/userspace-next feature/bcc";;
+       8|8e)
+            extra_config+=" feature/f2fstools feature/bcc feature/docker";;
         *)
             extra_config=$extra_c
             echo $extra_config
             exit 5;;
     esac 
+    [ "$bitbake_arg" == "wrlinux-image-ovp-guest" ] && extra_config+=" feature/kernel-ovp-guest"
 }
 
 
@@ -311,16 +366,15 @@ run_cmd()
 setup_pro()
 {
 
-
     #git setup
-    [ $ver == "5" ] || [ $ver == 1019git ] || [ $ver == 1019release ]  && extra_config="$extra_config feature/linux-yocto-dev feature/toolchain-next feature/userspace-next "
+    #[ $ver == "5" ] || [ $ver == 1019git ] || [ $ver == 1019release ]  && extra_config="$extra_config feature/linux-yocto-dev feature/toolchain-next feature/userspace-next "
     [ $test_group == "kdump" ]  && template='--templates feature/kexec feature/kdump '
     #run_cmd "${wr_version} --accept-eula yes  --dl-layers  --machines $machines --distro $distro $template"
-    [ $test_group == userspace ] && template='--templates feature/LAMP feature/gdb feature/ipv6 feature/krb5 feature/ntp feature/target-toolchain feature/test --dl-layers --layers meta-filesystems meta-virtualization meta-xfce'
+    [ $test_group == userspace ] && template=' feature/LAMP feature/gdb feature/ipv6 feature/krb5 feature/ntp feature/target-toolchain feature/test --dl-layers --layers meta-filesystems meta-virtualization meta-xfce '
 
     # dvd setup
     #run_cmd "/lpg-build/cdc/fast_prod/WRL10_17/WRL10_17_GIT/wrlinux-10/setup.sh --accept-eula yes  --dl-layers --machines $machines --distro $distro $template"
-    [ -n "$extra_config" ] && template="--templates $extra_config"
+    [ -n "$extra_config" ] && template="--templates $extra_config $template"
     #[ $test_group == "bts" ] && template=" $template feature/dpdk feature/bsp-extras --layers meta-dpdk"
     run_cmd "${wr_version} --accept-eula yes  --dl-layers --machines $machines --distro $distro $template"
 
@@ -337,10 +391,13 @@ setup_pro()
     {
         run_cmd "bitbake-layers add-layer ${test_layer}/wr-testing/bts-dev/" 
         run_cmd "echo require templates/feature/bts/template.conf >> conf/local.conf"
-        if [ -e $cur_path/test_plan.ini ]; then
-            cat $cur_path/test_plan.ini
+        #run_cmd 'echo KERNEL_FEATURES_append = \" features/iwlwifi/iwlwifi.scc\" >> conf/local.conf'
+        if [ -n "$test_plan" ]; then
+            #cat $test_plan
             #run_cmd "rm -rf *ini"
-            run_cmd "cp $cur_path/test_plan.ini test_plan.ini"
+            echo "$test_plan" 
+            echo "$test_plan" > test_plan.ini
+            #run_cmd "echo \"$test_plan\" > test_plan.ini"
             run_cmd 'echo ACTIVE_PLAN = \"test_plan.ini\" >> conf/local.conf'
         fi
         #run_cmd "cat ~/wrlinux/test-plan/bts.list > ${target_name}_${kernel}.ini"
@@ -359,6 +416,20 @@ setup_pro()
     {
         run_cmd "bitbake-layers add-layer ${test_layer}/wr-testing/kts-dev/" 
         run_cmd "echo require templates/feature/wr-kts/template.conf >> conf/local.conf"
+    }
+    
+    elif [ $test_group == "ovp-testing"  ];then
+    {
+        run_cmd "bitbake-layers add-layer ${test_layer}/wr-testing/ovp-testing/" 
+        run_cmd "echo require templates/feature/ovp/template.conf >> conf/local.conf"
+        #if [ -n "$test_plan" ]; then
+            #cat $test_plan
+            #run_cmd "rm -rf *ini"
+            #echo "$test_plan" 
+            #echo "$test_plan" > test_plan.ini
+            #run_cmd "echo \"$test_plan\" > test_plan.ini"
+            #run_cmd 'echo ACTIVE_PLAN = "$test_plan" >> conf/local.conf'
+        #fi
     }
     
     elif [ $test_group == "userspace"  ];then
@@ -417,9 +488,14 @@ PNWHITELIST_networking-layer += 'libtevent'
     }
     fi
 
-    #[ $test_group == EMPTY ] || run_cmd 'echo IMAGE_FSTYPES += \" tar.bz2\" >> conf/local.conf && echo BB_NUMBER_THREADS ?= \"24\" >> conf/local.conf && echo PARALLEL_MAKE ?= \"-j 24\" >> conf/local.conf && echo BB_NO_NETWORK_pn-lmbench = \"0\" >> conf/local.conf'
-
+    #[ $test_group == EMPTY ] || 
     
+    [ wr_version = ${MASTER_WR_GIT} ] && run_cmd 'echo IMAGE_FSTYPES_remove = \" live hddimg iso\" >>conf/local.conf'
+    #run_cmd 'echo IMAGE_FSTYPES += \" tar.bz2\" >> conf/local.conf && echo BB_NUMBER_THREADS ?= \"24\" >> conf/local.conf && echo PARALLEL_MAKE ?= \"-j 24\" >> conf/local.conf && echo BB_NO_NETWORK_pn-lmbench = \"0\" >> conf/local.conf'
+    run_cmd 'echo IMAGE_FSTYPES += \" tar.bz2\" >> conf/local.conf'
+    run_cmd 'echo BB_NO_NETWORK_pn-lmbench = \"0\" >> conf/local.conf'
+
+    echo $wr_version | grep 10_1[78]  || bitbake_arg=${bitbake_arg/glibc-/}
     if [ $multilib == "lib64" ]; then
     {
         run_cmd "bitbake $bitbake_arg"
@@ -468,3 +544,12 @@ fi
 #--enable-board=intel-x86-64   --enable-kernel=standard   --enable-rootfs=glibc-std   --with-layer=/buildarea1/lliu2/wrl8/wrlinux/wr-testing/bts-dev   --with-template=feature/bts   --enable-test=yes   --enable-internet-download=yes   --enable-ccache=no   --enable-reconfig
 #--enable-board=intel-x86-64   --enable-kernel=standard   --enable-rootfs=glibc-std --enable-test=yes   --enable-internet-download=yes   --enable-ccache=no   --enable-reconfig
 # --machines=qemux86-64 --distro=wrlinux-std-sato --dl-layers --all-layers --templates=feature/strict-qa --repo-verbose --verbose --accept-eula=yes
+#git clone --branch master-wr  git://pek-git/wrlinux-x
+
+
+#source /lpg-build/cdc/WASSP_LINUX_1019/wrl18sdk/environment-setup-x86_64-wrlinuxsdk-linux
+#"BB_DANGLINGAPPENDS_WARNONLY"
+#echo BB_NUMBER_THREADS ?= \"24\" >> conf/local.conf  
+
+#echo PARALLEL_MAKE ?= \"-j 24\" >> conf/local.conf
+

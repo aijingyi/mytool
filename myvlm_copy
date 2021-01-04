@@ -60,7 +60,7 @@ file_path()
     fi
     #build_dir_full=/net/${Image_server_full}$(pwd)/build/tmp-glibc/deploy/images/${get_mach}/
     #echo $build_dir_full
-
+    image=*Image
     case $get_mach in
         qemux86-64|intel-x86-64|intel-skylake-avx512-64|intel-skylake-64)
             #image=bzImage--*.bin
@@ -81,6 +81,9 @@ file_path()
         nxp-ls1046)
             image=Image
             dtb=fsl-ls1046a-rdb-sdk.dtb;;
+        nxp-ls20xx)
+            image=Image
+            dtb=fsl-ls2088a-rdb.dtb;;
         nxp-imx7)
             image=zImage
             dtb=imx7d-sdb.dtb;;
@@ -89,7 +92,20 @@ file_path()
             dtb=imx6q-sabresd.dtb
             echo $barcode
             [ ${barcode} == 922009 ] && dtb=imx6sx-sdb.dtb
-            [ $barcode == 21977 ] && dtb=imx6q-sabresd.dtb;;
+            [ $barcode == 21977 ] && dtb=imx6q-sabresd.dtb
+            [ $barcode == 24635 ] && dtb=imx6ul-14x14-evk.dtb;;
+        nxp-imx8)
+            #dtb=fsl-imx8qxp-mek.dtb;;
+            #[ $barcode == 21977 ] && dtb=fsl-imx8qm-mek.dtb
+            [ $barcode == 922009 ] && dtb=fsl-imx8qm-mek.dtb
+            [ $barcode == 29105 ] && dtb=fsl-imx8qm-mek.dtb
+            [ $barcode == 29106 ] && dtb=fsl-imx8qm-mek.dtb
+            #[ $barcode == 922009 ] && dtb=fsl-imx8qxp-mek.dtb
+            [ $barcode == 29046 ] && dtb=fsl-imx8qxp-mek.dtb
+            [ $barcode == 28475 ] && dtb=fsl-imx8mq-evk-b3.dtb
+            [ $barcode == 21977 ] && dtb=fsl-imx8mm-evk.dtb
+            #[ $barcode == 922009 ] && dtb=fsl-imx8mq-evk-b3.dtb;;
+		;;
         nxp-ls10xx)
             image=*[0-9].bin
             dtb=*iot*[0-9].dtb 
@@ -117,8 +133,44 @@ file_path()
     rootfs_full=${build_dir_full}${rootfs}
 }
 
+share_path()
+{
+    share_args
+    bsp=`/folk/vlm/commandline/vlmTool getAttr bsp -t $barcode`
+    echo $bsp | grep ls20xx  
+    [ $? == 0 ] && bsp=nxp-ls20xx
+    if [ $glibc == 1 ]; then
+        glibc_rootfs=glibc-cgl
+    else
+        glibc_rootfs=glibc-std
+    fi
+    base_path="/net/pek-lpgtest7302/buildarea1/SharedImage/$release/$component/${bsp}_standard_${glibc_rootfs}/latest"
+
+    image_full=${base_path}/kernel
+    rootfs_full=${base_path}/rootfs.tar.bz2
+
+    
+    case $bsp in
+        nxp-ls20xx)
+            dtb="fsl-ls2088a-rdb.dtb";;
+        *)
+            dtb=;;
+        
+    esac
+
+    [  "${dtb}x" == "x"  ] || dtb_full=${base_path}/$dtb
+
+
+}
 debug_info()
 {
+
+    if [ ${share}x == 1x ];then
+        share_path
+    else
+        file_path
+    fi
+    
     #echo ${image_full}
     #echo ${rootfs_full}
     [ ${dtb}x != x ] && echo ${dtb_full}
@@ -137,33 +189,74 @@ copy_image()
     echo "Backup images to test directory."
     cp -a ${image_full} $iso_link/
     cp -a ${rootfs_full} $iso_link/
-    [ ${dtb}x != x ] && cp -a ${dtb_full} $iso_link/
+    [ ${dtb}x != x ] && cp -a ${build_dir_full}/*dtb $iso_link/
     echo "copy files successfully!!!"
 }
 
 copyFile()
 {
+ hostname | egrep "pek-lpgtest19|7302|lpgtest16|7408" 
+if [ $? == 0 ]; then
+    vlmtool="ssh pek-lpgtest18 /folk/vlm/commandline/vlmTool"
+else
+    vlmtool=/folk/vlm/commandline/vlmTool
+fi
+    if [ ${share}x == 1x ];then
+        share_path
+    else
+        file_path
+    fi
     echo "Copy kernel and rootfs to board $barcode please wait..."
     if [ ${dtb}x == x ]; then
-    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -k ${image_full}  
-    /folk/vlm/commandline/vlmTool copyFile -t $barcode -r ${rootfs_full}  > /dev/null
-    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -r ${rootfs_full}  
-    /folk/vlm/commandline/vlmTool copyFile -t $barcode -k ${image_full}  > /dev/null
+        echo $vlmtool copyFile -t $barcode -k ${image_full}  
+        $vlmtool copyFile -t $barcode -k ${image_full}  > /dev/null
+        echo $vlmtool copyFile -t $barcode -r ${rootfs_full}  
+        $vlmtool copyFile -t $barcode -r ${rootfs_full}  > /dev/null
     else
-    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -k ${image_full}  
-    /folk/vlm/commandline/vlmTool copyFile -t $barcode -k ${image_full}  > /dev/null
-    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -r ${rootfs_full}  
-    /folk/vlm/commandline/vlmTool copyFile -t $barcode -r ${rootfs_full}  > /dev/null
-    echo /folk/vlm/commandline/vlmTool copyFile -t $barcode -d ${dtb_full} 
-    /folk/vlm/commandline/vlmTool copyFile -t $barcode -d ${dtb_full}  > /dev/null
+        echo $vlmtool copyFile -t $barcode -d ${dtb_full} 
+        $vlmtool copyFile -t $barcode -d ${dtb_full}  > /dev/null
+        echo $vlmtool copyFile -t $barcode -k ${image_full}  
+        $vlmtool copyFile -t $barcode -k ${image_full}  > /dev/null
+        echo $vlmtool copyFile -t $barcode -r ${rootfs_full}  
+        $vlmtool copyFile -t $barcode -r ${rootfs_full}  > /dev/null
     fi
     #echo $?
-    [ $? == 0 ] || exit 1
+    #[ $? == 0 ] || exit 1
     echo 'Copy kernel and rootfs to board successfully!'
-    /folk/vlm/commandline/vlmTool reboot -t $barcode >/dev/null
+    $vlmtool reboot -t $barcode >/dev/null
     echo "Reboot board $barcode successfully!"
 }
 
+
+share_args()
+{
+    case $component in
+        b|bsp)
+            component=BSP;;
+        l|ltp)
+            component=LTP;;
+        k|kernel)
+            component=Kernel;;
+        o|ovp)
+            component=OVP;;
+        *)
+            echo "Error component"
+            exit 3;;
+    esac
+    case $release in
+        c|circ)
+            release=LINCD_CIRC;;
+        s|std)
+            release=LINCD_STD;;
+        n|next)
+            release=LINCD_NEXT;;
+        *)
+            echo "Error release"
+            exit 4;;
+    esac
+    
+
+}
 nfs_copy()
 {
     echo "Copy kernel and rootfs to board $barcode please wait..."
@@ -188,7 +281,7 @@ nfs_copy()
 
 get_opt()
 {
-    while getopts ":t:f:hdcn" opt
+    while getopts ":t:f:c:r:gshdbn" opt
     do
         case $opt in
             t|target) 
@@ -196,19 +289,31 @@ get_opt()
 
             f|file) 
                 build_dir=$OPTARG;;
+            c|com) 
+                component=$OPTARG;;
+            r|release) 
+                release=$OPTARG
+                echo $release;;
+            g|glibc) 
+                glibc=1
+                echo $glibc;;
+            s|share) 
+                share=1
+                echo Use share image;;
+           
 
             h|help)
                 myhelp
 		exit 1;;
             d|debug)
-                file_path
+                
                 debug_info
                 exit 1;;                
             n|nfs)
                 file_path
                 nfs_copy
                 exit 1;;                
-            c|copy)
+            b|back)
                 file_path
                 copy_image
                 exit 1;;                
@@ -226,5 +331,5 @@ if [ $# = 0 ];then
 fi
 
 get_opt $@
-file_path
+
 copyFile
