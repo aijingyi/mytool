@@ -2,8 +2,8 @@
 #coding:utf-8
 
 ####################
-#公司访问外网认证脚本
-#update by kai.liang@i-soft.com.cn
+#   公司访问外网认证脚本
+#   update by kai.liang@i-soft.com.cn
 ###################
 
 import urllib, urllib2, getpass
