@@ -8,7 +8,12 @@ myhelp()
 {
 	echo "usage:myvlm-copy -t barcode: copy dtb,kernel and rootfs to board server"
 	echo "-t barcode of target -d: debug mode will print directory info not send file to server"
-        echo "-c copy iso file to iso directory."
+        echo "-c component, k:kernel, l:ltp, b:bsp"
+        echo "-r release, c|circ,s|std,n|next,l|lts21"
+        echo "-s share image"
+        echo "-i lib32"
+        echo "-p preempt-rt"
+        echo "-x sato"
 	echo "-h: help"
                 
 
@@ -24,7 +29,7 @@ file_path()
     iso_dir=`basename $(pwd)`
     #build_dir=/buildarea1/wrlinux-10.17/build_dir/kernel/auto_pti-on_spectre_v2-on/180402/lxbuilds/Harcuvar_platform_up/intel-x86-64-preempt-rt-glibc-std/lib32/wrlinux
     echo $current_dir | grep '^/net' 
-    if [ $? == 0 ]; then
+    if [  $? == 0  ]; then
         head_dir=${current_dir}
     else
         head_dir=/net/$(hostname)${current_dir}
@@ -63,8 +68,10 @@ file_path()
     image=*Image
     case $get_mach in
         qemux86-64|intel-x86-64|intel-skylake-avx512-64|intel-skylake-64)
-            #image=bzImage--*.bin
             image=bzImage
+            dtb=;; 
+        marvell-cn96xx)
+            image=Image
             dtb=;; 
         axxiaarm64)
             image=uImage--*.bin
@@ -88,21 +95,34 @@ file_path()
             image=zImage
             dtb=imx7d-sdb.dtb;;
         nxp-imx6)
-            image=zImage
-            dtb=imx6q-sabresd.dtb
+            #image=zImage
+            #dtb=imx6q-sabresd.dtb
             echo $barcode
             [ ${barcode} == 922009 ] && dtb=imx6sx-sdb.dtb
+            #[ $barcode == 922009 ] && dtb=imx8mq-evk.dtb
             [ $barcode == 21977 ] && dtb=imx6q-sabresd.dtb
+            [ $barcode == 29254 ] && dtb=imx6q-sabresd.dtb
+            [ $barcode == 29253 ] && dtb=imx6q-sabresd.dtb
+            [ $barcode == 21091 ] && dtb=imx6q-sabresd.dtb
+            [ $barcode == 29252 ] && dtb=imx6sx-sdb.dtb
+            #[ $barcode == 24635 ] && dtb=imx6ul-14x14-evk.dtb
+            [ $barcode == 994567 ] && dtb=imx6ul-14x14-evk.dtb
+            [ $barcode == 29238 ] && dtb=imx6ul-14x14-evk.dtb
+            [ $barcode == 29200 ] && dtb=imx6ul-14x14-evk.dtb
             [ $barcode == 24635 ] && dtb=imx6ul-14x14-evk.dtb;;
         nxp-imx8)
             #dtb=fsl-imx8qxp-mek.dtb;;
             #[ $barcode == 21977 ] && dtb=fsl-imx8qm-mek.dtb
-            [ $barcode == 922009 ] && dtb=fsl-imx8qm-mek.dtb
-            [ $barcode == 29105 ] && dtb=fsl-imx8qm-mek.dtb
-            [ $barcode == 29106 ] && dtb=fsl-imx8qm-mek.dtb
+            #[ $barcode == 922009 ] && dtb=imx8mq-evk.dtb
+            [ $barcode == 29242 ] && dtb=imx8mq-evk.dtb
+            [ $barcode == 29243 ] && dtb=imx8mq-evk.dtb
+            [ $barcode == 29105 ] && dtb=imx8qm-mek.dtb
+            [ $barcode == 29106 ] && dtb=imx8qm-mek.dtb
+            [ $barcode == 29139 ] && dtb=imx8qm-mek-dsi-rm67191.dtb
             #[ $barcode == 922009 ] && dtb=fsl-imx8qxp-mek.dtb
             [ $barcode == 29046 ] && dtb=fsl-imx8qxp-mek.dtb
-            [ $barcode == 28475 ] && dtb=fsl-imx8mq-evk-b3.dtb
+            [ $barcode == 28475 ] && dtb=imx8mq-evk.dtb
+            [ $barcode == 28477 ] && dtb=imx8mq-evk.dtb
             [ $barcode == 21977 ] && dtb=fsl-imx8mm-evk.dtb
             #[ $barcode == 922009 ] && dtb=fsl-imx8mq-evk-b3.dtb;;
 		;;
@@ -139,12 +159,26 @@ share_path()
     bsp=`/folk/vlm/commandline/vlmTool getAttr bsp -t $barcode`
     echo $bsp | grep ls20xx  
     [ $? == 0 ] && bsp=nxp-ls20xx
-    if [ $glibc == 1 ]; then
+    [ $bsp == nxp_imx8 ] && bsp=nxp-imx8
+    [ $bsp == fsl_imx6 ] && bsp=nxp-imx6
+    #[ $barcode == 922009 ] && bsp=nxp-imx8
+    if [ "$glibc" == 1 ]; then
         glibc_rootfs=glibc-cgl
     else
         glibc_rootfs=glibc-std
     fi
-    base_path="/net/pek-lpgtest7302/buildarea1/SharedImage/$release/$component/${bsp}_standard_${glibc_rootfs}/latest"
+    if [ "$sato" == 1 ]; then
+        glibc_rootfs=glibc-std-sato
+    else
+        glibc_rootfs=glibc-std
+    fi
+    if [ "$rt" == 1 ]; then
+        kernel_type=preempt-rt
+    else
+        kernel_type=standard
+    fi
+    [ "$lib32" == 1 ] && lib_path="_lib32"
+    base_path="/net/pek-lpgtest7408/buildarea1/SharedImage/$release/$component/${bsp}_${kernel_type}_${glibc_rootfs}${lib_path}/latest"
 
     image_full=${base_path}/kernel
     rootfs_full=${base_path}/rootfs.tar.bz2
@@ -153,6 +187,27 @@ share_path()
     case $bsp in
         nxp-ls20xx)
             dtb="fsl-ls2088a-rdb.dtb";;
+        nxp-imx6)
+            [ $barcode == 29238 ] && dtb=imx6ul-14x14-evk.dtb
+            [ $barcode == 29200 ] && dtb=imx6ul-14x14-evk.dtb
+            [ $barcode == 29252 ] && dtb=imx6sx-sdb.dtb
+            [ $barcode == 29254 ] && dtb=imx6q-sabresd.dtb
+            [ $barcode == 21091 ] && dtb=imx6q-sabresd.dtb
+            [ $barcode == 922009 ] && dtb=imx6sx-sdb.dtb
+            [ $barcode == 24635 ] && dtb=imx6ul-14x14-evk.dtb;;
+        nxp-imx8)
+            [ $barcode == 922009 ] && dtb=imx8mq-evk.dtb
+            [ $barcode == 29242 ] && dtb=imx8mq-evk.dtb
+            [ $barcode == 29243 ] && dtb=imx8mq-evk.dtb
+            [ $barcode == 29105 ] && dtb=imx8qm-mek.dtb
+            [ $barcode == 29106 ] && dtb=imx8qm-mek.dtb
+            [ $barcode == 29139 ] && dtb=imx8qm-mek.dtb
+            #[ $barcode == 922009 ] && dtb=fsl-imx8qxp-mek.dtb
+            [ $barcode == 29046 ] && dtb=fsl-imx8qxp-mek.dtb
+            [ $barcode == 28475 ] && dtb=imx8mq-evk.dtb
+            [ $barcode == 28477 ] && dtb=imx8mq-evk.dtb
+            [ $barcode == 21977 ] && dtb=imx8mm-evk.dtb;;
+            #[ $barcode == 922009 ] && dtb=fsl-imx8mq-evk-b3.dtb;;
         *)
             dtb=;;
         
@@ -187,15 +242,15 @@ copy_image()
     mkdir -p $iso_link
     #echo $iso_link
     echo "Backup images to test directory."
-    cp -a ${image_full} $iso_link/
-    cp -a ${rootfs_full} $iso_link/
     [ ${dtb}x != x ] && cp -a ${build_dir_full}/*dtb $iso_link/
+    #cp -a ${image_full} $iso_link/
+    #cp -a ${rootfs_full} $iso_link/
     echo "copy files successfully!!!"
 }
 
 copyFile()
 {
- hostname | egrep "pek-lpgtest19|7302|lpgtest16|7408" 
+ hostname | egrep "7302|lpgtest16|7408" 
 if [ $? == 0 ]; then
     vlmtool="ssh pek-lpgtest18 /folk/vlm/commandline/vlmTool"
 else
@@ -239,6 +294,8 @@ share_args()
             component=Kernel;;
         o|ovp)
             component=OVP;;
+        m|mark)
+            component=Benchmark;;
         *)
             echo "Error component"
             exit 3;;
@@ -250,6 +307,10 @@ share_args()
             release=LINCD_STD;;
         n|next)
             release=LINCD_NEXT;;
+        21|lts21)
+            release=LTS21;;
+        22|lts22)
+            release=LTS22;;
         *)
             echo "Error release"
             exit 4;;
@@ -281,7 +342,7 @@ nfs_copy()
 
 get_opt()
 {
-    while getopts ":t:f:c:r:gshdbn" opt
+    while getopts ":t:f:c:r:gspihdbnx" opt
     do
         case $opt in
             t|target) 
@@ -292,14 +353,23 @@ get_opt()
             c|com) 
                 component=$OPTARG;;
             r|release) 
-                release=$OPTARG
-                echo $release;;
+                release=$OPTARG;;
+                #echo $release;;
             g|glibc) 
-                glibc=1
-                echo $glibc;;
+                glibc=1;;
+                #echo $glibc;;
+            p|preempt-rt) 
+                rt=1
+                echo $rt;;
             s|share) 
                 share=1
                 echo Use share image;;
+            i|lib32) 
+                lib32=1
+                echo Use lib32 image;;
+            x|sato) 
+                sato=1
+                echo Use sato image;;
            
 
             h|help)

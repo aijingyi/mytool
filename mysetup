@@ -26,12 +26,16 @@ read_version()
     layer_1018=/folk/kliang/lxgit/wrlinux-1018
     #layer_1018=/net/pek-lpgtest18/buildarea1/kliang/wrlinux_1018
     layer_1019=/folk/kliang/lxgit/wrlinux-1019
+    layer_1021=/folk/kliang/lxgit/wrlinux-1021
+    layer_1022=/folk/kliang/lxgit/wrlinux-1022
     layer_master=/folk/kliang/lxgit/wrlinux
 
     MASTER_WR_GIT=/lpg-build/cdc/fast_prod/WRLINUX_MASTER_WR/MASTER_WR_GIT/wrlinux-10/setup.sh
     WRL10_19_GIT=/lpg-build/cdc/fast_prod/WRL10_19/WRL10_19_GIT/wrlinux-10/setup.sh
     WRL10_18_GIT=/lpg-build/cdc/fast_prod/WRL10_18/WRL10_18_GIT/wrlinux-10/setup.sh
     WRL10_17_GIT=/lpg-build/cdc/fast_prod/WRL10_17/WRL10_17_GIT/wrlinux-10/setup.sh
+    WRL10_21_GIT=/lpg-build/cdc/fast_prod/WRL10_21/WRL10_21_GIT/wrlinux-10/setup.sh
+    WRL10_22_GIT=/lpg-build/cdc/fast_prod/WRL10_22/WRL10_22_GIT/wrlinux-10/setup.sh
 
     WRL10_17_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_17/ |grep RCPL | tail -n1`
     WRL10_17=/lpg-build/cdc/fast_prod/WRL10_17/${WRL10_17_RCPL}/wrlinux-10/setup.sh
@@ -42,38 +46,50 @@ read_version()
     WRL10_19_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_19/ |grep RCPL | tail -n1`
     WRL10_19=/lpg-build/cdc/fast_prod/WRL10_19/${WRL10_19_RCPL}/wrlinux-10/setup.sh
 
+    WRL10_21_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_21/ |grep RCPL | tail -n1`
+    WRL10_21=/lpg-build/cdc/fast_prod/WRL10_21/${WRL10_21_RCPL}/wrlinux-10/setup.sh
+    WRL10_22_RCPL=`ls /lpg-build/cdc/fast_prod/WRL10_22/ |grep RCPL | tail -n1`
+    WRL10_22=/lpg-build/cdc/fast_prod/WRL10_22/${WRL10_21_RCPL}/wrlinux-10/setup.sh
     echo "Please choose wrlinux version:
-          1. 1018git (default)
-          2. 1018release
-          3. 1017git
-          4. 1017release
-          5. 1019git
-          6. 1019release
-          7. master_wr"
+          1. master_wr
+          2. 1022git
+          3. 1022release
+          4. 1021git
+          5. 1021release
+          6. 1019git
+          7. 1019release
+          8. 1018git
+          9. 1018release"
     read ver
     [ -z $ver ] && ver=1
     case $ver in
-        1|1018git)
-            test_layer=${layer_1018}
-            wr_version=${WRL10_18_GIT};;
-        2|1018release)
-            test_layer=${layer_1018}
-            wr_version=${WRL10_18};;
-        3|1017git)
-            test_layer=${layer_1017}
-            wr_version=${WRL10_17_GIT};;
-        4|1017release)
-            test_layer=${layer_1017}
-            wr_version=${WRL10_17};;
-        5|1019git)
-            test_layer=${layer_1019}
-            wr_version=${WRL10_19_GIT};;
-        6|1019release)
-            test_layer=${layer_1019}
-            wr_version=${WRL10_19};;
-        7|master_wr)
+        1|master_wr)
             test_layer=${layer_master}
             wr_version=${MASTER_WR_GIT};;
+        2|1022git)
+            test_layer=${layer_1022}
+            wr_version=${WRL10_22_GIT};;
+        3|1022release)
+            test_layer=${layer_1022}
+            wr_version=${WRL10_22};;
+        4|1021git)
+            test_layer=${layer_1021}
+            wr_version=${WRL10_21_GIT};;
+        5|1021release)
+            test_layer=${layer_1021}
+            wr_version=${WRL10_21};;
+        6|1019git)
+            test_layer=${layer_1019}
+            wr_version=${WRL10_19_GIT};;
+        7|1019release)
+            test_layer=${layer_1019}
+            wr_version=${WRL10_19};;
+        8|1018git)
+            test_layer=${layer_1018}
+            wr_version=${WRL10_21_GIT};;
+        9|1018release)
+            test_layer=${layer_1018}
+            wr_version=${WRL10_18};;
         *)
             echo "error kernel type!"
             exit 3;;
@@ -104,9 +120,11 @@ read_mach()
           31. axxiaarm
           32. axxiaarm64
           41. xilinx-zynqmp
+          42. xilinx-zynq
           51. bcm-587xx
           52. bcm-2xxx-rpi4
-          61. mpc8315e-rdb'
+          61. mpc8315e-rdb
+          62. marvell-cn96xx'
     read mach
     [ -z $mach ] && mach=11
     case $mach in
@@ -150,12 +168,16 @@ read_mach()
             machines=axxiaarm64;;
         41|xilinx-zynqmp)
             machines=xilinx-zynqmp;;
+        42|xilinx-zynq)
+            machines=xilinx-zynq;;
         51|bcm-587xx)
             machines=bcm-587xx;;
         52|bcm-2xxx-rpi4)
             machines=bcm-2xxx-rpi4;;
         61|mpc8315e-rdb)
             machines=mpc8315e-rdb;;
+        62|marvell-cn96xx)
+            machines=marvell-cn96xx;;
         *)
             echo "error number!"
             exit 1;;
@@ -293,13 +315,16 @@ read_extra_config()
 {
     echo "Please choose extra-config:
           1. null
-          2. docker dpdk kdump
+          2. docker kdump
           3. tpm2 xfce kexec kdump intel-persisten-memory
           4. userspace
           5. feature/kexec feature/kdump
           6. dev
           7. bcc dev
           8. f2fstoos bcc
+          9. qat lxc xfece
+          10. docker
+          11. qat
           "
     read extra_c
     [ -z $extra_c ] && extra_c=1
@@ -307,7 +332,7 @@ read_extra_config()
         1|1e)
             extra_config+=;;
         2|2e)
-            extra_config+=" feature/docker feature/dpdk feature/kexec feature/kdump";;
+            extra_config+=" feature/docker feature/kexec feature/kdump";;
         3|3e)
             extra_config+=" feature/tpm2 feature/xfce feature/kexec feature/kdump feature/intel-persistent-memory ";;
         4|4e)
@@ -320,6 +345,12 @@ read_extra_config()
             extra_config+=" feature/linux-yocto-dev feature/toolchain-next feature/userspace-next feature/bcc";;
        8|8e)
             extra_config+=" feature/f2fstools feature/bcc feature/docker";;
+       9|9e)
+            extra_config+=" feature/intel-qat feature/xfce feature/bsp-extras feature/docker feature/kexec feature/kdump feature/lxc feature/tpm2";;
+       10|10e)
+            extra_config+=" feature/docker";;
+       11|11e)
+            extra_config+=" feature/intel-qat";;
         *)
             extra_config=$extra_c
             echo $extra_config
@@ -331,7 +362,7 @@ read_extra_config()
 
 out_args()
 {
-    build_path=/buildarea1/$(whoami)/build_dir/${input_co}${test_group}_${machines}_${kernel}_${distro}_${multilib}_$(date +%m%d%H%M)
+    build_path=/buildarea1/$(whoami)/build_dir/${input_co}${test_group}_${machines}_${ver}_${kernel}_${distro}_${multilib}_$(date +%m%d%H%M)
     [ ! -d $build_path ] && mkdir -p $build_path 
      cd $build_path
     
@@ -380,12 +411,14 @@ setup_pro()
 
 
     #set env
-    if [ -f environment-setup-x86_64-wrlinuxsdk-linux ]; then
+    #if [ -f environment-setup-x86_64-wrlinuxsdk-linux ]; then
         run_cmd "source environment-setup-x86_64-wrlinuxsdk-linux"
-    fi
+    #fi
     #[ $ver != 1019git ] && [ $ver != 1019release ] && run_cmd "source environment-setup-x86_64-wrlinuxsdk-linux"
     run_cmd "source oe-init-build-env build"
 
+    run_cmd 'echo BB_NUMBER_THREADS ?= \"24\" >> conf/local.conf'
+    run_cmd 'echo PARALLEL_MAKE ?= \"-j 24\" >> conf/local.conf'
     #add layers
     if [ $test_group == "bts"  ];then
     {
@@ -476,6 +509,7 @@ PNWHITELIST_networking-layer += 'libtevent'
     {
         run_cmd "bitbake-layers add-layer ${test_layer}/wr-testing/benchmark-dev"
         run_cmd "echo require templates/feature/benchmark/template.conf >> conf/local.conf" 
+        sed -i "s/BB_NO_NETWORK ?= '1'/BB_NO_NETWORK ?= '0'/g" conf/local.conf
     }
     fi
 
